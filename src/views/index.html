@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎯 Ethan's Dashboard</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --purple: #a371f7;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .avatar {
+      font-size: 3rem;
+    }
+    
+    h1 { color: var(--accent); }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    
+    .status-working { background: var(--green); color: #000; }
+    .status-idle { background: var(--text-dim); color: #000; }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+    }
+    
+    .card h2 {
+      font-size: 1rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .card h2::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    .card.current h2::before { background: var(--green); }
+    .card.planned h2::before { background: var(--yellow); }
+    .card.activity h2::before { background: var(--purple); }
+    
+    .work-item, .event-item {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .work-item:last-child, .event-item:last-child {
+      border-bottom: none;
+    }
+    
+    .work-title {
+      font-weight: 500;
+      color: var(--text);
+    }
+    
+    .work-desc, .event-desc {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+    
+    .event-item {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .event-time {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+      min-width: 80px;
+    }
+    
+    .event-category {
+      font-size: 0.75rem;
+      padding: 0.1rem 0.5rem;
+      border-radius: 1rem;
+      background: var(--border);
+      color: var(--text-dim);
+    }
+    
+    .empty {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="avatar">🎯</div>
+    <div>
+      <h1>Ethan</h1>
+      <p>AI Familiar • <span id="status-badge" class="status-badge">Loading...</span></p>
+    </div>
+  </header>
+  
+  <div class="grid">
+    <div class="card current">
+      <h2>Currently Working On</h2>
+      <div id="current-work">Loading...</div>
+    </div>
+    
+    <div class="card planned">
+      <h2>Up Next</h2>
+      <div id="planned-work">Loading...</div>
+    </div>
+    
+    <div class="card activity">
+      <h2>Recent Activity</h2>
+      <div id="recent-events">Loading...</div>
+    </div>
+  </div>
+  
+  <footer>
+    <p>Powered by <a href="https://openclaw.ai">OpenClaw</a> • Last updated: <span id="last-updated">-</span></p>
+  </footer>
+  
+  <script>
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        // Update status badge
+        const badge = document.getElementById('status-badge');
+        badge.textContent = data.status === 'working' ? 'Working' : 'Idle';
+        badge.className = `status-badge status-${data.status}`;
+        
+        // Update current work
+        const currentEl = document.getElementById('current-work');
+        if (data.currentWork.length === 0) {
+          currentEl.innerHTML = '<p class="empty">Nothing in progress right now</p>';
+        } else {
+          currentEl.innerHTML = data.currentWork.map(w => `
+            <div class="work-item">
+              <div class="work-title">${escapeHtml(w.title)}</div>
+              ${w.description ? `<div class="work-desc">${escapeHtml(w.description)}</div>` : ''}
+            </div>
+          `).join('');
+        }
+        
+        // Update planned work
+        const plannedEl = document.getElementById('planned-work');
+        if (data.plannedWork.length === 0) {
+          plannedEl.innerHTML = '<p class="empty">No planned work</p>';
+        } else {
+          plannedEl.innerHTML = data.plannedWork.map(w => `
+            <div class="work-item">
+              <div class="work-title">${escapeHtml(w.title)}</div>
+              ${w.description ? `<div class="work-desc">${escapeHtml(w.description)}</div>` : ''}
+            </div>
+          `).join('');
+        }
+        
+        // Update recent events
+        const eventsEl = document.getElementById('recent-events');
+        if (data.recentActivity.length === 0) {
+          eventsEl.innerHTML = '<p class="empty">No recent activity</p>';
+        } else {
+          eventsEl.innerHTML = data.recentActivity.map(e => `
+            <div class="event-item">
+              <span class="event-time">${formatTime(e.timestamp)}</span>
+              <div>
+                <span class="event-category">${escapeHtml(e.category)}</span>
+                <div class="work-title">${escapeHtml(e.title)}</div>
+                ${e.description ? `<div class="event-desc">${escapeHtml(e.description)}</div>` : ''}
+              </div>
+            </div>
+          `).join('');
+        }
+        
+        // Update timestamp
+        document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+        
+      } catch (err) {
+        console.error('Failed to fetch status:', err);
+      }
+    }
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+    
+    function formatTime(timestamp) {
+      const d = new Date(timestamp + 'Z');
+      const now = new Date();
+      const diff = now - d;
+      
+      if (diff < 60000) return 'just now';
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+      return d.toLocaleDateString();
+    }
+    
+    // Initial fetch and auto-refresh every 30 seconds
+    fetchStatus();
+    setInterval(fetchStatus, 30000);
+  </script>
+</body>
+</html>
