@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/status', (req, res) => {
   const currentWork = db.getCurrentWork();
   const plannedWork = db.getPlannedWork();
-  const recentEvents = db.getRecentEvents(10);
+  const recentEvents = db.getRecentEvents(30);
   
   res.json({
     name: 'Ethan',
