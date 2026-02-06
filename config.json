@@ -1,0 +1,20 @@
+{
+  "agent": {
+    "name": "Ethan",
+    "role": "AI Familiar",
+    "emoji": "🎯"
+  },
+  "dashboard": {
+    "title": "Activity Stream",
+    "port": 3000,
+    "refreshInterval": 5000
+  },
+  "categories": [
+    {"id": "moltbook", "color": "#a371f7", "label": "Moltbook"},
+    {"id": "stanford", "color": "#d29922", "label": "Stanford"},
+    {"id": "dashboard", "color": "#58a6ff", "label": "Dashboard"},
+    {"id": "coding", "color": "#3fb950", "label": "Coding"},
+    {"id": "memory", "color": "#f85149", "label": "Memory"},
+    {"id": "engagement", "color": "#79c0ff", "label": "Engagement"}
+  ]
+}

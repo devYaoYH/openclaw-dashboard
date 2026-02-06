@@ -1,7 +1,12 @@
 const express = require('express');
 const db = require('../db');
+const activityRoutes = require('./activity');
+const config = require('../config');
 
 const router = express.Router();
+
+// Mount activity routes
+router.use('/activity', activityRoutes);
 
 // GET /api/status - Overall status summary
 router.get('/status', (req, res) => {
@@ -10,8 +15,8 @@ router.get('/status', (req, res) => {
   const recentEvents = db.getRecentEvents(30);
   
   res.json({
-    name: 'Ethan',
-    role: 'AI Familiar',
+    name: config.agent.name,
+    role: config.agent.role,
     status: currentWork.length > 0 ? 'working' : 'idle',
     currentWork,
     plannedWork: plannedWork.slice(0, 5),

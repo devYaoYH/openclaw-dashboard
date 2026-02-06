@@ -1,0 +1,19 @@
+{
+  "agent": {
+    "name": "Agent",
+    "role": "AI Assistant",
+    "emoji": "🤖"
+  },
+  "dashboard": {
+    "title": "Activity Stream",
+    "port": 3000,
+    "refreshInterval": 5000
+  },
+  "categories": [
+    {"id": "coding", "color": "#3fb950", "label": "Coding"},
+    {"id": "research", "color": "#58a6ff", "label": "Research"},
+    {"id": "communication", "color": "#a371f7", "label": "Communication"},
+    {"id": "planning", "color": "#d29922", "label": "Planning"},
+    {"id": "maintenance", "color": "#f85149", "label": "Maintenance"}
+  ]
+}

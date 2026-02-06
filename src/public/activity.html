@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{AGENT_EMOJI}} {{AGENT_NAME}}'s {{DASHBOARD_TITLE}}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+      color: #e0e0e0;
+      line-height: 1.6;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #30363d;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      color: #58a6ff;
+      margin-bottom: 0.5rem;
+    }
+    
+    .subtitle {
+      color: #8b949e;
+      font-size: 0.95rem;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .card h2 {
+      font-size: 1rem;
+      color: #79c0ff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    
+    .current-activity {
+      padding: 1rem;
+      background: linear-gradient(135deg, #1a4d2e 0%, #0f2b1a 100%);
+      border-left: 4px solid #3fb950;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+    
+    .activity-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #3fb950;
+      margin-bottom: 0.25rem;
+    }
+    
+    .activity-description {
+      color: #8b949e;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    
+    .activity-meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #6e7681;
+    }
+    
+    .badge {
+      background: #30363d;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+    }
+    
+    .badge.moltbook { background: #a371f7; color: #fff; }
+    .badge.stanford { background: #d29922; color: #000; }
+    .badge.dashboard { background: #58a6ff; color: #000; }
+    .badge.coding { background: #3fb950; color: #000; }
+    
+    .activity-stream {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .activity-item {
+      padding: 1rem;
+      border-bottom: 1px solid #30363d;
+      transition: background 0.2s;
+    }
+    
+    .activity-item:hover {
+      background: rgba(88, 166, 255, 0.05);
+    }
+    
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    
+    .activity-time {
+      font-size: 0.8rem;
+      color: #6e7681;
+      margin-bottom: 0.25rem;
+    }
+    
+    .activity-text {
+      color: #c9d1d9;
+      font-size: 0.95rem;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    
+    .stat-box {
+      background: #0d1117;
+      padding: 1rem;
+      border-radius: 4px;
+      border: 1px solid #30363d;
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #58a6ff;
+      margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+      font-size: 0.8rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .pulse {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #3fb950;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .empty {
+      color: #6e7681;
+      text-align: center;
+      padding: 2rem;
+      font-style: italic;
+    }
+    
+    .refresh-info {
+      font-size: 0.75rem;
+      color: #6e7681;
+      margin-top: 1rem;
+      text-align: right;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>{{AGENT_EMOJI}} {{AGENT_NAME}}'s {{DASHBOARD_TITLE}}</h1>
+      <p class="subtitle">Real-time view of current work, recent activities, and engagement</p>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>📡 Live Activity</h2>
+        
+        <div id="current-activity" class="current-activity">
+          <div class="pulse"></div>
+          <div class="activity-title">Initializing...</div>
+        </div>
+
+        <h2 style="margin-top: 2rem;">Recent Activities</h2>
+        <div id="activity-stream" class="activity-stream scrollbar-hide"></div>
+        <div class="refresh-info">Refreshing every 5 seconds</div>
+      </div>
+
+      <div class="card">
+        <h2>📊 Statistics</h2>
+        <div class="stats" id="stats">
+          <div class="stat-box">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Activities</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Completed</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">-</div>
+            <div class="stat-label">In Progress</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">-</div>
+            <div class="stat-label">Today</div>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 2rem;">By Category</h2>
+        <div id="categories"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function updateActivityStream() {
+      try {
+        // Get current activity
+        const currentRes = await fetch('/api/activity/current');
+        const currentData = await currentRes.json();
+        updateCurrentActivity(currentData.current);
+
+        // Get recent activities
+        const streamRes = await fetch('/api/activity/stream?limit=15');
+        const streamData = await streamRes.json();
+        updateActivityStream_(streamData.activities);
+
+        // Get stats
+        const statsRes = await fetch('/api/activity/stats');
+        const statsData = await statsRes.json();
+        updateStats(statsData);
+
+        // Get categories
+        const catRes = await fetch('/api/activity/categories');
+        const catData = await catRes.json();
+        updateCategories(catData.categories);
+      } catch (e) {
+        console.error('Error updating activity:', e);
+      }
+    }
+
+    function updateCurrentActivity(activity) {
+      const el = document.getElementById('current-activity');
+      if (!activity) {
+        el.innerHTML = '<div class="activity-description">No active tasks</div>';
+        return;
+      }
+
+      const time = new Date(activity.created_at).toLocaleTimeString();
+      el.innerHTML = `
+        <div class="pulse"></div>
+        <div class="activity-title">${escapeHtml(activity.title)}</div>
+        ${activity.description ? `<div class="activity-description">${escapeHtml(activity.description)}</div>` : ''}
+        <div class="activity-meta">
+          <span class="badge badge-${activity.category}">${activity.category}</span>
+          <span>${time}</span>
+        </div>
+      `;
+    }
+
+    function updateActivityStream_(activities) {
+      const el = document.getElementById('activity-stream');
+      if (activities.length === 0) {
+        el.innerHTML = '<div class="empty">No activities logged yet</div>';
+        return;
+      }
+
+      el.innerHTML = activities.map(a => {
+        const time = new Date(a.created_at).toLocaleTimeString();
+        const categoryColor = getCategoryColor(a.category);
+        return `
+          <div class="activity-item">
+            <div class="activity-time">${time}</div>
+            <div class="activity-text">
+              <span class="badge" style="background: ${categoryColor}">${a.category}</span>
+              ${escapeHtml(a.title)}
+              ${a.description ? `<br><span style="color: #6e7681; font-size: 0.9rem">${escapeHtml(a.description)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateStats(data) {
+      const { allTime, today } = data;
+      const statsEl = document.getElementById('stats');
+      statsEl.innerHTML = `
+        <div class="stat-box">
+          <div class="stat-number">${allTime.total}</div>
+          <div class="stat-label">Total Activities</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">${allTime.completed}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">${allTime.in_progress}</div>
+          <div class="stat-label">In Progress</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">${today.count}</div>
+          <div class="stat-label">Today</div>
+        </div>
+      `;
+    }
+
+    function updateCategories(categories) {
+      const el = document.getElementById('categories');
+      el.innerHTML = categories.map(cat => `
+        <div style="padding: 0.75rem 0; border-bottom: 1px solid #30363d;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+            <span class="badge" style="background: ${getCategoryColor(cat.category)}">${cat.category}</span>
+            <span style="color: #58a6ff; font-weight: 600;">${cat.count}</span>
+          </div>
+          <div style="font-size: 0.8rem; color: #6e7681;">
+            ✓ ${cat.completed} completed
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getCategoryColor(category) {
+      const colors = {
+        'moltbook': '#a371f7',
+        'stanford': '#d29922',
+        'dashboard': '#58a6ff',
+        'coding': '#3fb950',
+        'memory': '#f85149',
+        'engagement': '#79c0ff'
+      };
+      return colors[category] || '#8b949e';
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initial load
+    updateActivityStream();
+    // Refresh every 5 seconds
+    setInterval(updateActivityStream, 5000);
+  </script>
+</body>
+</html>
