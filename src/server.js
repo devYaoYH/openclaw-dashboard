@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
+const telemetryRoutes = require('./routes/telemetry');
 const config = require('./config');
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.use('/api', apiRoutes);
+app.use('/', telemetryRoutes);  // Telemetry routes (includes /telemetry view + APIs)
 app.use('/', dashboardRoutes);
 
 // Start server
