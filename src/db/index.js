@@ -42,9 +42,30 @@ db.exec(`
     status TEXT DEFAULT 'planned'
   );
 
+  CREATE TABLE IF NOT EXISTS telemetry_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT DEFAULT (datetime('now')),
+    agent_id TEXT NOT NULL DEFAULT 'ethan',
+    session_id TEXT,
+    event_type TEXT NOT NULL,
+    tool_name TEXT,
+    input_summary TEXT,
+    outcome TEXT,
+    latency_ms INTEGER,
+    tokens_used INTEGER,
+    cost_estimate REAL,
+    error_message TEXT,
+    context TEXT,
+    metadata TEXT
+  );
+
   CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp DESC);
   CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
   CREATE INDEX IF NOT EXISTS idx_current_work_status ON current_work(status);
+  CREATE INDEX IF NOT EXISTS idx_telemetry_timestamp ON telemetry_events(timestamp DESC);
+  CREATE INDEX IF NOT EXISTS idx_telemetry_agent ON telemetry_events(agent_id);
+  CREATE INDEX IF NOT EXISTS idx_telemetry_tool ON telemetry_events(tool_name);
+  CREATE INDEX IF NOT EXISTS idx_telemetry_outcome ON telemetry_events(outcome);
 `);
 
 module.exports = {
@@ -132,5 +153,100 @@ module.exports = {
       WHERE id = ?
     `);
     return stmt.run(id);
+  },
+
+  // Telemetry - AOS Phase 0
+  logTelemetry({
+    agent_id = 'ethan',
+    session_id = null,
+    event_type,
+    tool_name = null,
+    input_summary = null,
+    outcome = null,
+    latency_ms = null,
+    tokens_used = null,
+    cost_estimate = null,
+    error_message = null,
+    context = null,
+    metadata = null
+  }) {
+    const stmt = db.prepare(`
+      INSERT INTO telemetry_events (
+        agent_id, session_id, event_type, tool_name,
+        input_summary, outcome, latency_ms, tokens_used,
+        cost_estimate, error_message, context, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    return stmt.run(
+      agent_id, session_id, event_type, tool_name,
+      input_summary, outcome, latency_ms, tokens_used,
+      cost_estimate, error_message,
+      JSON.stringify(context), JSON.stringify(metadata)
+    );
+  },
+
+  getTelemetryStats(agent_id = 'ethan', hours = 24) {
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    
+    // Success rate by tool
+    const successRate = db.prepare(`
+      SELECT 
+        tool_name,
+        COUNT(*) as total,
+        SUM(CASE WHEN outcome = 'success' THEN 1 ELSE 0 END) as successes,
+        ROUND(100.0 * SUM(CASE WHEN outcome = 'success' THEN 1 ELSE 0 END) / COUNT(*), 2) as success_rate
+      FROM telemetry_events
+      WHERE agent_id = ? AND timestamp > ? AND tool_name IS NOT NULL
+      GROUP BY tool_name
+      ORDER BY total DESC
+    `).all(agent_id, since);
+
+    // Cost breakdown
+    const costs = db.prepare(`
+      SELECT
+        tool_name,
+        COUNT(*) as calls,
+        SUM(cost_estimate) as total_cost,
+        AVG(cost_estimate) as avg_cost
+      FROM telemetry_events
+      WHERE agent_id = ? AND timestamp > ? AND cost_estimate IS NOT NULL
+      GROUP BY tool_name
+      ORDER BY total_cost DESC
+    `).all(agent_id, since);
+
+    // Latency stats
+    const latency = db.prepare(`
+      SELECT
+        tool_name,
+        AVG(latency_ms) as avg_ms,
+        MIN(latency_ms) as min_ms,
+        MAX(latency_ms) as max_ms
+      FROM telemetry_events
+      WHERE agent_id = ? AND timestamp > ? AND latency_ms IS NOT NULL
+      GROUP BY tool_name
+    `).all(agent_id, since);
+
+    // Recent errors
+    const errors = db.prepare(`
+      SELECT timestamp, tool_name, error_message, context
+      FROM telemetry_events
+      WHERE agent_id = ? AND timestamp > ? AND outcome = 'failure'
+      ORDER BY timestamp DESC
+      LIMIT 20
+    `).all(agent_id, since);
+
+    return { successRate, costs, latency, errors };
+  },
+
+  getRecentTelemetry(agent_id = 'ethan', limit = 50) {
+    return db.prepare(`
+      SELECT 
+        id, timestamp, event_type, tool_name, outcome,
+        latency_ms, cost_estimate, input_summary, error_message
+      FROM telemetry_events
+      WHERE agent_id = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `).all(agent_id, limit);
   }
 };
