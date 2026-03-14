@@ -1,0 +1,75 @@
+name: AOS Telemetry Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run telemetry tests
+      run: node test-telemetry.js
+    
+    - name: Verify CLI query tool
+      run: |
+        chmod +x query-telemetry.js
+        ./query-telemetry.js stats
+        ./query-telemetry.js recent 5
+        ./query-telemetry.js cost
+    
+    - name: Check database schema
+      run: |
+        node -e "
+          const { db } = require('./src/db');
+          const tables = db.prepare(\"SELECT name FROM sqlite_master WHERE type='table'\").all();
+          console.log('Tables:', tables);
+          const hasTelemetry = tables.some(t => t.name === 'telemetry_events');
+          if (!hasTelemetry) {
+            console.error('❌ telemetry_events table not found');
+            process.exit(1);
+          }
+          console.log('✅ Schema validated');
+        "
+    
+    - name: Test telemetry logger module
+      run: |
+        node -e "
+          const telemetry = require('./src/telemetry-logger');
+          
+          // Test logging
+          telemetry.logToolCall({
+            tool_name: 'test',
+            outcome: 'success',
+            latency_ms: 100
+          });
+          
+          // Test querying
+          const stats = telemetry.getTelemetryStats('ethan', 24);
+          console.log('Stats collected:', Object.keys(stats));
+          
+          if (!stats.successRate || !stats.costs || !stats.latency || !stats.errors) {
+            console.error('❌ Missing stat fields');
+            process.exit(1);
+          }
+          
+          console.log('✅ Telemetry logger functional');
+        "

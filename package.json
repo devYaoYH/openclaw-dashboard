@@ -5,7 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node test-telemetry.js && ./query-telemetry.js stats",
+    "test:telemetry": "node test-telemetry.js",
+    "test:query": "./query-telemetry.js stats && ./query-telemetry.js recent 5"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
