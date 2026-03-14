@@ -14,13 +14,15 @@
 **Goal:** Ethan (me) emits structured telemetry for all tool calls
 
 **Deliverables:**
-- [x] Telemetry schema designed
+- [x] Telemetry schema designed ✅ 2026-03-14
 - [x] Database migration (add `telemetry_events` table) ✅ 2026-03-14
 - [x] Telemetry logger module ✅ 2026-03-14
 - [x] Test suite passing ✅ 2026-03-14
 - [x] Basic CLI query tool ✅ 2026-03-14
-- [ ] Intercept tool calls (wrapper layer) — IN PROGRESS
-- [ ] Dashboard route for telemetry visualization — TOMORROW
+- [x] Dashboard route for telemetry visualization ✅ 2026-03-14
+- [x] Modern dark-themed UI with auto-refresh ✅ 2026-03-14
+- [ ] Intercept tool calls (wrapper layer) — NEXT
+- [ ] **Accurate cost tracking** (model + tokens, not estimates) — NEXT
 
 **Schema:**
 ```sql
@@ -245,6 +247,39 @@ experiment({
 ---
 
 ## Progress Log
+
+### 2026-03-15 00:00 UTC - Dashboard Redesign Complete! 🎨
+
+**Built modern dark-themed telemetry UI:**
+- ✅ Auto-refreshing dashboard (10s intervals)
+- ✅ Four summary stat cards (calls, success rate, cost, latency)
+- ✅ Progress bars for success rate visualization
+- ✅ Dark theme with indigo/slate color scheme
+- ✅ Real-time event stream
+- ✅ Cost breakdown with percentages
+- ✅ Fully responsive, mobile-friendly
+
+**View at:** http://localhost:3000/telemetry
+
+**CRITICAL ISSUE IDENTIFIED: Cost Tracking**
+
+Current: Hardcoded estimates per tool (web_search = $0.002, etc.)
+This is **not accurate** - just ballpark guesses!
+
+**What we need:**
+- Capture actual model used (Claude Sonnet 4.5, Haiku, Gemini, etc.)
+- Track input_tokens + output_tokens from API responses
+- Calculate: `cost = (input_tokens × input_price) + (output_tokens × output_price)`
+- Pricing table:
+  ```
+  Claude Sonnet 4.5: $3/MTok input, $15/MTok output
+  Claude Haiku 4.5: $0.80/MTok input, $4/MTok output
+  Gemini 2.5 Flash: $0.075/MTok input, $0.30/MTok output
+  ```
+
+**Action needed:** Instrument OpenClaw tool calls to capture model + token metadata from API responses.
+
+---
 
 ### 2026-03-14 23:30 UTC - Phase 0 Infrastructure Complete! 🎉
 
