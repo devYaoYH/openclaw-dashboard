@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AOS Telemetry - Agent Observability</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --border: #334155;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .header-meta {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+    
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    
+    .stat-change {
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      color: var(--success);
+    }
+    
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .refresh-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background 0.2s;
+    }
+    
+    .refresh-btn:hover {
+      background: var(--primary-dark);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    thead {
+      border-bottom: 2px solid var(--border);
+    }
+    
+    th {
+      text-align: left;
+      padding: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    tbody tr:hover {
+      background: rgba(99, 102, 241, 0.1);
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    
+    .badge-success {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+    
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning);
+    }
+    
+    .badge-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+    
+    .event-stream {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .event {
+      background: rgba(99, 102, 241, 0.05);
+      border-left: 3px solid var(--primary);
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    
+    .event:hover {
+      background: rgba(99, 102, 241, 0.1);
+    }
+    
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .event-type {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .event-time {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    .event-details {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      transition: width 0.3s;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    .auto-refresh-indicator {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>
+        <span>🎯</span>
+        <span>AOS Telemetry Dashboard</span>
+      </h1>
+      <div class="header-meta">
+        <div class="meta-item">
+          <span>🤖</span>
+          <span>Agent: <strong id="agent-name">Ethan</strong></span>
+        </div>
+        <div class="meta-item">
+          <span>⏱️</span>
+          <span>Window: <strong id="time-window">Last 24 hours</strong></span>
+        </div>
+        <div class="meta-item">
+          <span>🔄</span>
+          <span>Updated: <strong id="last-update">Loading...</strong></span>
+        </div>
+        <div class="meta-item auto-refresh">
+          <div class="auto-refresh-indicator"></div>
+          <span>Auto-refresh: 10s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Summary Stats -->
+    <div class="stats-grid" id="summary-stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Tool Calls</div>
+        <div class="stat-value" id="total-calls">—</div>
+        <div class="stat-change">+0 from last hour</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Success Rate</div>
+        <div class="stat-value" id="overall-success">—</div>
+        <div class="stat-change">Overall performance</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Cost</div>
+        <div class="stat-value" id="total-cost">—</div>
+        <div class="stat-change">Last 24 hours</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Latency</div>
+        <div class="stat-value" id="avg-latency">—</div>
+        <div class="stat-change">Across all tools</div>
+      </div>
+    </div>
+
+    <!-- Success Rate by Tool -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span>✅</span>
+          <span>Success Rate by Tool</span>
+        </h2>
+        <button class="refresh-btn" onclick="refreshData()">
+          <span id="refresh-icon">🔄</span> Refresh
+        </button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Calls</th>
+            <th>Successes</th>
+            <th>Rate</th>
+            <th>Performance</th>
+          </tr>
+        </thead>
+        <tbody id="success-rate-table">
+          <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cost Breakdown -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span>💰</span>
+          <span>Cost Breakdown</span>
+        </h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tool</th>
+            <th>Calls</th>
+            <th>Total Cost</th>
+            <th>Avg Cost</th>
+            <th>% of Total</th>
+          </tr>
+        </thead>
+        <tbody id="cost-table">
+          <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recent Events Stream -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span>📝</span>
+          <span>Recent Events</span>
+        </h2>
+      </div>
+      <div class="event-stream" id="event-stream">
+        <p style="text-align: center; color: var(--text-secondary);">Loading events...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let autoRefreshInterval;
+
+    async function refreshData() {
+      const refreshIcon = document.getElementById('refresh-icon');
+      refreshIcon.innerHTML = '<span class="loading"></span>';
+      
+      try {
+        const [statsRes, eventsRes] = await Promise.all([
+          fetch('/api/telemetry/stats'),
+          fetch('/api/telemetry/recent?limit=20')
+        ]);
+        
+        const stats = await statsRes.json();
+        const events = await eventsRes.json();
+        
+        updateSummaryStats(stats);
+        updateSuccessRateTable(stats.successRate);
+        updateCostTable(stats.costs);
+        updateEventStream(events);
+        
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+      } catch (err) {
+        console.error('Failed to refresh:', err);
+      } finally {
+        refreshIcon.textContent = '🔄';
+      }
+    }
+
+    function updateSummaryStats(stats) {
+      // Total calls
+      const totalCalls = stats.successRate.reduce((sum, row) => sum + row.total, 0);
+      document.getElementById('total-calls').textContent = totalCalls.toLocaleString();
+      
+      // Overall success rate
+      const totalSuccess = stats.successRate.reduce((sum, row) => sum + row.successes, 0);
+      const overallRate = totalCalls > 0 ? (totalSuccess / totalCalls * 100).toFixed(1) : 0;
+      document.getElementById('overall-success').textContent = overallRate + '%';
+      
+      // Total cost
+      const totalCost = stats.costs.reduce((sum, row) => sum + (row.total_cost || 0), 0);
+      document.getElementById('total-cost').textContent = '$' + totalCost.toFixed(4);
+      
+      // Avg latency
+      const avgLatency = stats.latency.reduce((sum, row) => sum + (row.avg_ms || 0), 0) / (stats.latency.length || 1);
+      document.getElementById('avg-latency').textContent = avgLatency.toFixed(0) + 'ms';
+    }
+
+    function updateSuccessRateTable(data) {
+      const tbody = document.getElementById('success-rate-table');
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No data yet</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = data.map(row => {
+        const rate = row.success_rate;
+        const badgeClass = rate >= 90 ? 'badge-success' : rate >= 70 ? 'badge-warning' : 'badge-danger';
+        
+        return `
+          <tr>
+            <td><strong>${row.tool_name || 'unknown'}</strong></td>
+            <td>${row.total}</td>
+            <td>${row.successes}</td>
+            <td><span class="badge ${badgeClass}">${rate.toFixed(1)}%</span></td>
+            <td>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${rate}%"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateCostTable(data) {
+      const tbody = document.getElementById('cost-table');
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No cost data yet</td></tr>';
+        return;
+      }
+      
+      const totalCost = data.reduce((sum, row) => sum + (row.total_cost || 0), 0);
+      
+      const rows = data.map(row => {
+        const percentage = totalCost > 0 ? (row.total_cost / totalCost * 100).toFixed(1) : 0;
+        return `
+          <tr>
+            <td><strong>${row.tool_name || 'unknown'}</strong></td>
+            <td>${row.calls}</td>
+            <td>$${row.total_cost.toFixed(4)}</td>
+            <td>$${row.avg_cost.toFixed(4)}</td>
+            <td>${percentage}%</td>
+          </tr>
+        `;
+      }).join('');
+      
+      const totalRow = `
+        <tr style="font-weight: 600; border-top: 2px solid var(--border); background: rgba(99, 102, 241, 0.1);">
+          <td>TOTAL</td>
+          <td>${data.reduce((sum, r) => sum + r.calls, 0)}</td>
+          <td>$${totalCost.toFixed(4)}</td>
+          <td>—</td>
+          <td>100%</td>
+        </tr>
+      `;
+      
+      tbody.innerHTML = rows + totalRow;
+    }
+
+    function updateEventStream(events) {
+      const stream = document.getElementById('event-stream');
+      
+      if (events.length === 0) {
+        stream.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No events yet</p>';
+        return;
+      }
+      
+      stream.innerHTML = events.map(evt => {
+        const time = new Date(evt.timestamp).toLocaleString();
+        const badgeClass = evt.outcome === 'success' ? 'badge-success' : 'badge-danger';
+        
+        return `
+          <div class="event">
+            <div class="event-header">
+              <span class="event-type">
+                ${evt.event_type} 
+                ${evt.tool_name ? `→ <strong>${evt.tool_name}</strong>` : ''}
+                <span class="badge ${badgeClass}">${evt.outcome || 'N/A'}</span>
+              </span>
+              <span class="event-time">${time}</span>
+            </div>
+            <div class="event-details">
+              ${evt.input_summary ? `<span>📝 ${evt.input_summary}</span>` : ''}
+              ${evt.latency_ms ? `<span>⏱️ ${evt.latency_ms}ms</span>` : ''}
+              ${evt.cost_estimate ? `<span>💰 $${evt.cost_estimate.toFixed(4)}</span>` : ''}
+              ${evt.error_message ? `<span style="color: var(--danger);">❌ ${evt.error_message}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Initial load
+    refreshData();
+    
+    // Auto-refresh every 10 seconds
+    autoRefreshInterval = setInterval(refreshData, 10000);
+  </script>
+</body>
+</html>

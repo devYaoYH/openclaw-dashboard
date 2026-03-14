@@ -30,6 +30,12 @@ router.get('/api/telemetry/recent', (req, res) => {
 
 // Telemetry dashboard view
 router.get('/telemetry', (req, res) => {
+  const path = require('path');
+  res.sendFile(path.join(__dirname, '../views/telemetry.html'));
+});
+
+// Legacy inline HTML version (kept for reference)
+router.get('/telemetry/legacy', (req, res) => {
   const hours = parseInt(req.query.hours) || 24;
   
   try {
