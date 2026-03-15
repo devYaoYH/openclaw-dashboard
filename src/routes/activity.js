@@ -6,10 +6,12 @@
 const express = require('express');
 const Database = require('better-sqlite3');
 const path = require('path');
+const ActivityLogger = require('../activity-logger');
 
 const router = express.Router();
 const DB_PATH = path.join(__dirname, '../../data/dashboard.db');
 const db = new Database(DB_PATH);
+const activityLogger = new ActivityLogger();
 
 /**
  * GET /api/activity/current
@@ -124,17 +126,8 @@ router.post('/log', express.json(), (req, res) => {
     });
   }
   
-  const stmt = db.prepare(`
-    INSERT INTO activities (category, title, description, metadata)
-    VALUES (?, ?, ?, ?)
-  `);
-  
-  const result = stmt.run(
-    category,
-    title,
-    description || null,
-    JSON.stringify(metadata || {})
-  );
+  // Use ActivityLogger which auto-logs to telemetry
+  const result = activityLogger.log(category, title, description || null, metadata || {});
   
   res.json({
     success: true,

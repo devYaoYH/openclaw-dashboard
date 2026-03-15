@@ -6,6 +6,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const telemetry = require('./telemetry-logger');
 
 const DB_PATH = path.join(__dirname, '../db/dashboard.db');
 const db = new Database(DB_PATH);
@@ -41,12 +42,27 @@ class ActivityLogger {
       VALUES (?, ?, ?, ?)
     `);
     
-    return stmt.run(
+    const result = stmt.run(
       category,
       title,
       description,
       JSON.stringify(metadata)
     );
+    
+    // Auto-log to telemetry as a decision event
+    try {
+      telemetry.logDecision({
+        decision_type: 'activity',
+        description: `${category}: ${title}`,
+        outcome: 'success',
+        context: { category, description, metadata }
+      });
+    } catch (err) {
+      // Fail silently - don't break activity logging if telemetry fails
+      console.error('Telemetry logging failed:', err.message);
+    }
+    
+    return result;
   }
 
   startTask(title, description = null, category = 'task') {
