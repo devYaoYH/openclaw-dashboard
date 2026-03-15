@@ -186,7 +186,8 @@ module.exports = {
   },
 
   getTelemetryStats(agent_id = 'ethan', hours = 24) {
-    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    // SQLite datetime format: 'YYYY-MM-DD HH:MM:SS'
+    const since = new Date(Date.now() - hours * 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ');
     
     // Success rate by tool
     const successRate = db.prepare(`
