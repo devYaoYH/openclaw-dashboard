@@ -21,8 +21,12 @@
 - [x] Basic CLI query tool ✅ 2026-03-14
 - [x] Dashboard route for telemetry visualization ✅ 2026-03-14
 - [x] Modern dark-themed UI with auto-refresh ✅ 2026-03-14
-- [ ] Intercept tool calls (wrapper layer) — NEXT
+- [x] Intercept tool calls (wrapper layer) ✅ 2026-03-16 00:40 UTC
+  - wrapExec, wrapFileOp, wrapWebSearch, wrapTool
+  - Automatic telemetry capture without manual logging
+  - Test suite: 6/6 passing
 - [ ] **Accurate cost tracking** (model + tokens, not estimates) — NEXT
+- [ ] **Production integration** - integrate wrappers into actual heartbeat/tasks
 
 **Schema:**
 ```sql
