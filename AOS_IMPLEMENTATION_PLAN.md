@@ -10,8 +10,9 @@
 
 ## Architecture Overview
 
-### Phase 0: Self-Instrumentation (Weekend: Mar 15-16)
+### Phase 0: Self-Instrumentation (Weekend: Mar 15-16) ✅ COMPLETE
 **Goal:** Ethan (me) emits structured telemetry for all tool calls
+**Status:** Infrastructure complete! Ready for production integration.
 
 **Deliverables:**
 - [x] Telemetry schema designed ✅ 2026-03-14
@@ -25,8 +26,13 @@
   - wrapExec, wrapFileOp, wrapWebSearch, wrapTool
   - Automatic telemetry capture without manual logging
   - Test suite: 6/6 passing
-- [ ] **Accurate cost tracking** (model + tokens, not estimates) — NEXT
-- [ ] **Production integration** - integrate wrappers into actual heartbeat/tasks
+- [x] **Accurate cost tracking** ✅ 2026-03-16 12:30 UTC
+  - src/cost-tracker.js: Pricing tables for all major models
+  - Model alias resolution (sonnet → anthropic/claude-sonnet-4-5)
+  - Token-based cost calculation (input_tokens, output_tokens)
+  - Test suite: 11/11 passing
+  - Enhanced CLI: log-telemetry-with-cost.sh
+- [ ] **Production integration** - integrate wrappers + cost tracking into actual workflows
 
 **Schema:**
 ```sql
