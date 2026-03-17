@@ -1,6 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { getTelemetryStats, getRecentTelemetry } = require('../db');
+const {
+  getSuccessRateByTool,
+  getCostBreakdown,
+  getLatencyStats,
+  getErrorTrends,
+  getRecentErrors,
+  getSummaryStats,
+} = require('../telemetry-analytics');
 
 // Telemetry stats API
 router.get('/api/telemetry/stats', (req, res) => {
@@ -23,6 +31,82 @@ router.get('/api/telemetry/recent', (req, res) => {
   try {
     const events = getRecentTelemetry(agent_id, limit);
     res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Phase 1 Analytics APIs =====
+
+// Summary stats API
+router.get('/api/telemetry/summary', (req, res) => {
+  const window = req.query.window || '24h';
+  
+  try {
+    const stats = getSummaryStats(window);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Success rate by tool API
+router.get('/api/telemetry/success-rate', (req, res) => {
+  const window = req.query.window || '24h';
+  
+  try {
+    const results = getSuccessRateByTool(window);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Cost breakdown API
+router.get('/api/telemetry/costs', (req, res) => {
+  const window = req.query.window || '24h';
+  
+  try {
+    const results = getCostBreakdown(window);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Latency stats API
+router.get('/api/telemetry/latency', (req, res) => {
+  const tool = req.query.tool || null;
+  const window = req.query.window || '24h';
+  
+  try {
+    const stats = getLatencyStats(tool, window);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Error trends API
+router.get('/api/telemetry/error-trends', (req, res) => {
+  const window = req.query.window || '7d';
+  const groupBy = req.query.groupBy || 'day';
+  
+  try {
+    const results = getErrorTrends(window, groupBy);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Recent errors API
+router.get('/api/telemetry/errors/recent', (req, res) => {
+  const limit = parseInt(req.query.limit) || 20;
+  
+  try {
+    const errors = getRecentErrors(limit);
+    res.json(errors);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
